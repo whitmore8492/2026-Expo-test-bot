@@ -10,15 +10,6 @@ import java.util.function.Supplier;
 
 public class Robot extends BaseHardware {
 
-    private static final Logger log = LoggerFactory.getLogger(Robot.class);
-    public DriveTrain driveTrain = new DriveTrain();
-    public Intake intake = new Intake();
-    public Launcher launcher = new Launcher();
-    public Uppies uppies = new Uppies();
-    public TransitionRoller transitionRoller = new TransitionRoller();
-    public LauncherBlocker launcherBlocker = new LauncherBlocker();
-    public Limey limey = new Limey();
-
 
     private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this
@@ -48,71 +39,22 @@ public class Robot extends BaseHardware {
 
     @Override
     public void init() {
-        // Must set Hardware Map and telemetry before calling init
-        driveTrain.hardwareMap = this.hardwareMap;
-        driveTrain.telemetry = this.telemetry;
-        driveTrain.init();
 
 
-        //  lighting.hardwareMap = this.hardwareMap;
-        //lighting.telemetry = this.telemetry;
-        // lighting.init();
 
-        // sensors.hardwareMap = this.hardwareMap;
-        // sensors.telemetry = this.telemetry;
-        // sensors.init();
-
-        intake.hardwareMap = this.hardwareMap;
-        intake.telemetry = this.telemetry;
-        intake.init();
-
-        launcher.hardwareMap = this.hardwareMap;
-        launcher.telemetry = this.telemetry;
-        launcher.init();
-
-        launcherBlocker.hardwareMap = this.hardwareMap;
-        launcherBlocker.telemetry = this.telemetry;
-        launcherBlocker.init();
-
-        transitionRoller.hardwareMap = this.hardwareMap;
-        transitionRoller.telemetry = this.telemetry;
-        transitionRoller.init();
-
-        limey.hardwareMap = this.hardwareMap;
-        limey.telemetry = this.telemetry;
-        limey.setTelemetry(telemetry);
-        limey.init();
-
-        uppies.hardwareMap = this.hardwareMap;
-        uppies.telemetry = this.telemetry;
-        uppies.init();
 
     }
 
     @Override
     public void init_loop() {
-        driveTrain.init_loop();
-        //lighting.init_loop();
-        // sensors.init_loop();
-        intake.init_loop();
-        launcher.init_loop();
-        launcherBlocker.init_loop();
-        transitionRoller.init_loop();
-        limey.init_loop();
-        uppies.init_loop();
+
+
     }
 
     @Override
     public void start() {
-        driveTrain.start();
-        // lighting.start();
-        // sensors.start();
-        intake.start();
-        launcher.start();
-        launcherBlocker.start();
-        transitionRoller.start();
-        limey.start();
-        uppies.start();
+
+
 
 
         // lighting.UpdateBaseColor(RevBlinkinLedDriver.BlinkinPattern.WHITE);
@@ -120,58 +62,27 @@ public class Robot extends BaseHardware {
 
     @Override
     public void loop() {
-        driveTrain.loop();
-        //. lighting.loop();
-        // sensors.loop();
-        intake.loop();
-        launcher.loop();
-        launcherBlocker.loop();
-        transitionRoller.loop();
-        limey.loop();
-        uppies.loop();
 
-        if (transitionRoller.CurrentMode == TransitionRoller.Mode.Stop
-                && intake.CurrentMode == Intake.Mode.NTKforward) {
-            intake.cmdBLUE();
+
+
+
         }
 
-
-    }
-
-    public void autonLoop() {
-        //driveTrain.loop();
-        //. lighting.loop();
-        // sensors.loop();
-        intake.loop();
-        launcher.loop();
-        launcherBlocker.loop();
-        transitionRoller.loop();
-        limey.loop();
-        uppies.loop();
-
-
-    }
-
-
     @Override
-    public void stop() {
-        driveTrain.stop();
-        // lighting.stop();
-        // sensors.stop();
-        intake.stop();
-        launcher.stop();
-        launcherBlocker.stop();
-        transitionRoller.stop();
-        limey.stop();
-        uppies.stop();
-        // lighting.UpdateBaseColor(RevBlinkinLedDriver.BlinkinPattern.WHITE);
+    void stop() {
+
     }
-
-    public void safteyCheck() {
-        //when called comfirm flicker is in safe position before spindexing.
-    }
+}
 
 
+
+
+
+
+
+
+
+/*
     public double targetDistanceCalc() {
 
         double targetOffsetAngle_Vertical = limey.getTy();
@@ -291,7 +202,7 @@ public class Robot extends BaseHardware {
     }
      */
 
-}
+
 
 
 
