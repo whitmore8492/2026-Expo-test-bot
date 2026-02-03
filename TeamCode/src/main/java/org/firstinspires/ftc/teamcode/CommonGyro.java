@@ -1,18 +1,18 @@
-package org.firstinspires.ftc.teamcode.Hardware;
-// 10/1/25 NJ -Removing old IMU stuff and adding Universal IMU so we don't specify which chip is used
-//import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.ImuOrientationOnRobot;
 
 import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.hardware.IMU;
-import com.qualcomm.robotcore.hardware.ImuOrientationOnRobot;
 
 import java.util.Locale;
+
+
 
 public class CommonGyro extends BaseHardware {
 

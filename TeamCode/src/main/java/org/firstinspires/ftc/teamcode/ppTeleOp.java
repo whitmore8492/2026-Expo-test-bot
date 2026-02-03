@@ -1,3 +1,5 @@
+package org.firstinspires.ftc.teamcode;
+
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.ImuOrientationOnRobot;
@@ -12,7 +14,10 @@ import java.util.Locale;
 
 
 
-public class CommonGyro extends BaseHardware {
+
+
+
+public class ppTeleOp extends BaseHardware {
 
     // The IMU sensor object
     IMU imu;

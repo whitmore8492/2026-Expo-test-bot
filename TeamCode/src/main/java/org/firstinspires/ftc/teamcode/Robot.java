@@ -1,10 +1,9 @@
+package org.firstinspires.ftc.teamcode;
+
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 
