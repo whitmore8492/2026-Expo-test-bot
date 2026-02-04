@@ -1,278 +1,581 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.hardware.IMU;
-import com.qualcomm.robotcore.hardware.ImuOrientationOnRobot;
+import com.bylazar.telemetry.TelemetryManager;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.Func;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.teamcode.Common.CommonLogic;
+import org.firstinspires.ftc.teamcode.Common.Settings;
+import org.firstinspires.ftc.teamcode.Hardware.Robot;
+import com.bylazar.configurables.PanelsConfigurables;
+import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierCurve;
+import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.HeadingInterpolator;
+import com.pedropathing.paths.Path;
+import com.pedropathing.paths.PathChain;
+import com.pedropathing.util.Timer;
 
-import java.util.Locale;
+import java.util.function.Supplier;
+
+//package org.firstinspires.ftc.robotcontroller.external.samples;
 
 
 
+@com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "ppTeleop", group = "ppTeleop")
+//@Disabled
+public class ppTeleOp extends OpMode {
+    private Follower follower;
+    public static Pose startingPose; //See ExampleAuto to understand how to use this
+    private boolean automatedDrive;
+    private Supplier<PathChain> pathChain;
+    private TelemetryManager telemetryM;
+    private boolean slowMode = false;
+    private double slowModeMultiplier = 0.5;
+
+    private static final String TAGTeleop = "8492-Teleop";
+    //RobotTest robot = new RobotTest();
+    Robot robot = new Robot();
+    //    // Declare OpMode members.
+    private boolean gp1_prev_a = false;
+    private boolean gp1_prev_b = false;
+    private boolean gp1_prev_x = false;
+    private boolean gp1_prev_y = false;
+    private boolean gp1_prev_right_bumper = false;
+    private boolean gp1_prev_left_bumper = false;
+    private boolean gp1_prev_dpad_up = false;
+    private boolean gp1_prev_dpad_down = false;
+    private boolean gp1_prev_dpad_left = false;
+    private boolean gp1_prev_dpad_right = false;
+    private boolean gp1_prev_back = false;
+    private boolean gp1_prev_start = false;
+
+    private boolean gp2_prev_a = false;
+    private boolean gp2_prev_b = false;
+    private boolean gp2_prev_x = false;
+    private boolean gp2_prev_y = false;
+    private boolean gp2_prev_right_bumper = false;
+    private boolean gp2_prev_left_bumper = false;
+    private boolean gp2_prev_dpad_up = false;
+    private boolean gp2_prev_dpad_down = false;
+    private boolean gp2_prev_dpad_left = false;
+    private boolean gp2_prev_dpad_right = false;
+    private boolean gp2_prev_back = false;
+    private double LeftMotorPower = 0;
+    private double RightMotorPower = 0;
+    private boolean gp2_prev_start = false;
+    private int tHeading = 0;
+    private boolean bAutoTurn = false;
+    //private boolean EndGame = false;
+    //private boolean EndGame2 = false;
+    //private boolean EndGame3 = false;
+    //private boolean EndGame4 = false;
+    //private boolean EndGameb = false;
+    //private boolean EndGame2b = false;
+    //private boolean EndGame3b = false;
+    //private boolean EndGame4b = false;
+    private boolean UppiesOverrideEnabled = false;
+
+    private ElapsedTime runtime = new ElapsedTime();
+    //private ElapsedTime Gameruntime = new ElapsedTime();
+    //private ElapsedTime EndGameTime = new ElapsedTime();
+    //private ElapsedTime Gameruntime2 = new ElapsedTime();
+    //private ElapsedTime EndGameTime2= new ElapsedTime();
+    private ElapsedTime uppiesInhibitor = new ElapsedTime();
+    private double HLIW = 500;
+    //HowLongItWork
 
 
+    //*********************************************************************************************
 
-public class ppTeleOp extends BaseHardware {
+    //Code to run ONCE when the driver hits INIT
 
-    // The IMU sensor object
-    IMU imu;
-    // BHI260IMU imu;
-    // State used for updating telemetry
-    Orientation angles;
-    int gyroHeading_Current = 0;
-    private ImuOrientationOnRobot ImuOrientationOnRobot;
-    RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
-            RevHubOrientationOnRobot.LogoFacingDirection.RIGHT;   //was up then right
-    RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-            RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD;    //was backward
-
-    RevHubOrientationOnRobot orientationOnRobot = new
-            RevHubOrientationOnRobot(logoDirection, usbDirection);
-    IMU.Parameters parameters = new IMU.Parameters(orientationOnRobot);
-
-    /*
-     * Code to run ONCE when the driver hits INIT
-     */
     @Override
     public void init() {
+        //----------------------------------------------------------------------------------------------
+        // Safety Management
+        //
+        // These constants manage the duration we allow for callbacks to user code to run for before
+        // such code is considered to be stuck (in an infinite loop, or wherever) and consequently
+        // the robot controller application is restarted. They SHOULD NOT be modified except as absolutely
+        // necessary as poorly chosen values might inadvertently compromise safety.
+        //----------------------------------------------------------------------------------------------
+        // msStuckDetectInit = Settings.msStuckDetectInit;
+        // msStuckDetectInitLoop = Settings.msStuckDetectInitLoop;
+        //msStuckDetectStart = Settings.msStuckDetectStart;
+        //msStuckDetectLoop = Settings.msStuckDetectLoop;
+        // msStuckDetectStop = Settings.msStuckDetectStop;
 
-        // Set up the parameters with which we will use our IMU. Note that integration
-        // algorithm here just reports accelerations to the logcat log; it doesn't actually
-        // provide positional information.
-        //BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-    /* Looks like these are no longer needed
-        parameters.angleUnit = IMU.AngleUnit.DEGREES;
+        telemetry.addData("Tele_Op", "Initialized");
 
-        parameters.accelUnit = IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
-        parameters.loggingEnabled = true;
-        parameters.loggingTag = "IMU";
-        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
- */
-        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
-        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
-        // and named "imu".
-        imu = hardwareMap.get(IMU.class, "imu");
-        //imu.initialize(parameters);
+        robot.hardwareMap = hardwareMap;
+        robot.telemetry = telemetry;
+        //robot.driveTrain.setMaxPower(DriveTrain.DRIVETRAIN_NORMALSPEED);
+        robot.init();
+        //robot.driveTrain.ResetGyro();
+        //Gameruntime.reset();
+        //Gameruntime2.reset();
 
-        imu.initialize(new IMU.Parameters(orientationOnRobot));
+        // Initialize the hardware variables. Note that the strings used here as parameters
+        // to 'get' must correspond to the names assigned during the robot configuration
+        // step (using the FTC Robot Controller app on the phone).
+
+        // Most robots need the motor on one side to be reversed to drive forward
+        // Reverse the motor that runs backwards when connected directly to the battery
+
+        follower = CompBotConstants.createFollower(hardwareMap);
+        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
+        follower.update();
+
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+        pathChain = () -> follower.pathBuilder() //Lazy Curve Generation
+                .addPath(new Path(new BezierLine(follower::getPose, new Pose(45, 98))))
+                .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(45), 0.8))
+                .build();
 
     }
 
     //*********************************************************************************************
-    /*
-     * Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
-     */
+
+    //Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
+
     @Override
     public void init_loop() {
+        robot.init_loop();
+
     }
 
     //*********************************************************************************************
-    /*
-     * Code to run ONCE when the driver hits PLAY
-     */
+
+    //Code to run ONCE when the driver hits PLAY
+
     @Override
     public void start() {
-
+        Runtime.getRuntime();
+        //Gameruntime.reset();           <<<<<<<< lights
+        //Gameruntime2.reset();              <<<<<<<<<<
+        follower.startTeleopDrive();
     }
 
     //*********************************************************************************************
-    /*
-     * Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
-     */
+
+    // Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
+
     @Override
     public void loop() {
-        // It has been discovered that we do not need to continually retrive the value from
-        // the gyro in the loop function.  When needed the calling class will get the most
-        // current gyro heading with getGyroHeading.
+        robot.loop();
+        write2Log();
+        follower.update();
+        telemetryM.update();
+        if (!automatedDrive) {
+            //Make the last parameter false for field-centric
+            //In case the drivers want to use a "slowMode" you can scale the vectors
+            //This is the normal version to use in the TeleOp
+            if (!slowMode) follower.setTeleOpDrive(
+                    -gamepad1.left_stick_y,
+                    -gamepad1.left_stick_x,
+                    -gamepad1.right_stick_x,
+                    true // Robot Centric
+            );
+                //This is how it looks with slowMode on
+            else follower.setTeleOpDrive(
+                    -gamepad1.left_stick_y * slowModeMultiplier,
+                    -gamepad1.left_stick_x * slowModeMultiplier,
+                    -gamepad1.right_stick_x * slowModeMultiplier,
+                    true // Robot Centric
+            );
+        }
+        //Automated PathFollowing
+        if (gamepad1.aWasPressed()) {
+            follower.followPath(pathChain.get());
+            automatedDrive = true;
+        }
+        //Stop automated following if the follower is done
+        if (automatedDrive && (gamepad1.bWasPressed() || !follower.isBusy())) {
+            follower.startTeleopDrive();
+            automatedDrive = false;
+        }
+        //Slow Mode
+        if (gamepad1.rightBumperWasPressed()) {
+            slowMode = !slowMode;
+        }
+        //Optional way to change slow mode strength
+        if (gamepad1.xWasPressed()) {
+            slowModeMultiplier += 0.25;
+        }
+        //Optional way to change slow mode strength
+        if (gamepad2.yWasPressed()) {
+            slowModeMultiplier -= 0.25;
+        }
+        telemetryM.debug("position", follower.getPose());
+        telemetryM.debug("velocity", follower.getVelocity());
+        telemetryM.debug("automatedDrive", automatedDrive);
+        tHeading = getTurnDirection();
+        if (Math.abs(gamepad1.right_stick_x) > 0.04) {
+            bAutoTurn = false;
+        }
+        if (gamepad1.right_trigger > 0.4) {
+           // tHeading = (int)Math.round(robot.targetAngleCalc());
+            bAutoTurn = true;
 
-        //updateGyroHeading();
+        }
 
+
+
+        //***********   Gamepad 1 controls ********
+        if (bAutoTurn) {
+            if (gamepad1.right_bumper) {
+              //  robot.driveTrain.cmdTeleOp(CommonLogic.joyStickMath(gamepad1.left_stick_y * -1),
+                        CommonLogic.joyStickMath(gamepad1.left_stick_x);
+                //robot.driveTrain.autoTurn(tHeading), robot.driveTrain.DTrain_FASTSPEED);
+            } else if (gamepad1.left_bumper) {
+                //robot.driveTrain.cmdTeleOp(CommonLogic.joyStickMath(gamepad1.left_stick_y * -1),
+                        CommonLogic.joyStickMath(gamepad1.left_stick_x);
+                     //   robot.driveTrain.autoTurn(tHeading), robot.driveTrain.DTrain_SLOWSPEED);
+
+            } else {
+
+                //robot.driveTrain.cmdTeleOp(CommonLogic.joyStickMath(gamepad1.left_stick_y * -1),
+                        CommonLogic.joyStickMath(gamepad1.left_stick_x);
+                        //robot.driveTrain.autoTurn(tHeading), robot.driveTrain.DTrain_NORMALSPEED);
+            }
+        } else {
+            if (gamepad1.right_bumper) {
+               // robot.driveTrain.cmdTeleOp(CommonLogic.joyStickMath(gamepad1.left_stick_y * -1),
+                        CommonLogic.joyStickMath(gamepad1.left_stick_x);
+                   //     CommonLogic.joyStickMath(gamepad1.right_stick_x), robot.driveTrain.DTrain_FASTSPEED);
+            } else if (gamepad1.left_bumper) {
+                //robot.driveTrain.cmdTeleOp(CommonLogic.joyStickMath(gamepad1.left_stick_y * -1),
+                        CommonLogic.joyStickMath(gamepad1.left_stick_x);
+                     //   CommonLogic.joyStickMath(gamepad1.right_stick_x), robot.driveTrain.DTrain_SLOWSPEED);
+
+            } else {
+
+                //robot.driveTrain.cmdTeleOp(CommonLogic.joyStickMath(gamepad1.left_stick_y * -1),
+                        CommonLogic.joyStickMath(gamepad1.left_stick_x);
+                        //CommonLogic.joyStickMath(gamepad1.right_stick_x), robot.driveTrain.DTrain_NORMALSPEED);
+            }
+
+        }
+
+        if (Math.abs(gamepad1.right_stick_y) > Settings.JOYSTICK_DEADBAND_STICK) {
+
+        }
+        //***********   Pushers
+        //if (CommonLogic.oneShot(gamepad1.a, gp1_prev_a)) {
+        if (gamepad1.a) {
+
+        }
+
+        if (gamepad1.b) {
+
+        }
+        if (CommonLogic.oneShot(gamepad1.back, gp1_prev_back)) {
+            //Initialize Gyro
+           // robot.driveTrain.ResetGyro();
+            tHeading = 0;
+        }
+
+        if (CommonLogic.oneShot(gamepad1.start, gp1_prev_start)) {
+            UppiesOverrideEnabled = true;
+        }
+
+        if (gamepad1.right_trigger > 0.8) {
+
+        }
+        if ((gamepad1.right_trigger <= 0.79) && (gamepad1.right_trigger > 0.10)) {
+
+        }
+
+        // Bumpers high and lower Powers for the wheels,
+        //if (CommonLogic.oneShot(gamepad1.left_bumper, gp1_prev_left_bumper)) {
+        //  robot.driveTrain.setMaxPower(DriveTrain.DRIVETRAIN_SLOWSPEED);
+        //}
+        if ((gamepad1.left_trigger > .6) && (gamepad1.right_trigger < .6)) {
+
+        } else if ((gamepad1.left_trigger < .6) && (gamepad1.right_trigger > .6)) {
+
+        } else {
+            //robot.driveTrain.setMaxPower(DriveTrain.DRIVETRAIN_NORMALSPEED);
+        }
+
+        //if (CommonLogic.oneShot(gamepad1.right_bumper, gp1_prev_right_bumper)) {
+        //  robot.driveTrain.setMaxPower(DriveTrain.DRIVETRAIN_SLOWSPEED);
+        // }
+        if (gamepad1.right_bumper) {
+            //  robot.driveTrain.setMaxPower(DriveTrain.DRIVETRAIN_TURBOSPEED);
+            // RobotLog.aa(TAGTeleop,"GamepadRB: " + gamepad1.right_bumper);
+            //    telemetry.addData (TAGTeleop, "GamepadRB: " + gamepad1.right_bumper);
+            //  } else if(gamepad1.right_bumper == false)
+            // {
+            //  robot.driveTrain.setMaxPower(DriveTrain.DRIVETRAIN_NORMALSPEED);
+        }
+
+        //***********  Grabbers
+        if (CommonLogic.oneShot(gamepad1.dpad_right, gp1_prev_dpad_right)) {
+
+        }
+
+        if (CommonLogic.oneShot(gamepad1.dpad_up, gp1_prev_dpad_up)) {
+            if(uppiesInhibitor.seconds() >= 100 || UppiesOverrideEnabled){
+                //robot.uppies.cmdUp();
+            }
+
+        }
+        if(CommonLogic.oneShotRelease(gamepad1.dpad_up, gp1_prev_dpad_up)){
+            //robot.uppies.cmdStop();
+        }
+
+        if (CommonLogic.oneShot(gamepad1.dpad_left, gp1_prev_dpad_left)) {
+
+        }
+
+        if (CommonLogic.oneShot(gamepad1.dpad_down, gp1_prev_dpad_down)) {
+            if(uppiesInhibitor.seconds() >= 100 || UppiesOverrideEnabled){
+                //robot.uppies.cmdDown();
+            }
+
+        }
+        if(CommonLogic.oneShotRelease(gamepad1.dpad_down, gp1_prev_dpad_down)){
+            //robot.uppies.cmdStop();
+        }
+
+        //***********   Gamepad 2 controls ********
+
+        // Bumpers close and open the gripper
+        if (( gamepad2.left_bumper == true)) {
+
+            //LaunchTelleTouch();
+
+        }
+
+        if (CommonLogic.oneShot(gamepad2.right_bumper, gp2_prev_right_bumper)) {
+            robot.bCkSenors = false;
+
+        }
+        if (gamepad2.right_bumper) {
+            //LaunchNear();
+        }
+
+        if (CommonLogic.oneShot(gamepad2.back, gp2_prev_back)) {
+            //robot.transitionRoller.cmdBack();
+
+        }
+
+        if (CommonLogic.oneShotRelease(gamepad2.back, gp2_prev_back)) {
+            //robot.transitionRoller.cmdStop();
+        }
+
+        if (CommonLogic.oneShot(gamepad2.start, gp2_prev_start)) {
+
+
+        }
+        if (gamepad2.start) {
+
+
+        }
+
+        if (CommonLogic.oneShot(gamepad2.a, gp2_prev_a)) {
+            //robot.intake.cmdFoward();
+            robot.bCkSenors = true;
+            //robot.transitionRoller.cmdSpin();
+        }
+
+        if (CommonLogic.oneShot(gamepad2.b, gp2_prev_b)) {
+            //robot.intake.cmdStop();
+            //robot.transitionRoller.cmdStop();
+        }
+
+        if (CommonLogic.oneShot(gamepad2.y, gp2_prev_y)) {
+           // NoLaunch();
+        }
+
+        if (CommonLogic.oneShot(gamepad2.x, gp2_prev_x)) {
+
+
+
+            //robot.transitionRoller.cmdBack();
+        }
+
+
+
+        if (Math.abs(gamepad2.left_stick_x) > 0.8) {
+
+        }
+
+        if (Math.abs(gamepad2.left_stick_y) > Settings.JOYSTICK_DEADBAND_STICK) {
+
+        }
+        else{
+        }
+
+
+        if (Math.abs(gamepad2.right_stick_y) > Settings.JOYSTICK_DEADBAND_STICK) {
+
+        }
+
+        if (CommonLogic.oneShot(gamepad2.dpad_up, gp2_prev_dpad_up)) {
+            //LaunchLaser();
+        }
+
+        if (CommonLogic.oneShot(gamepad2.dpad_down, gp2_prev_dpad_down)) {
+        }
+
+        if (CommonLogic.oneShot(gamepad2.dpad_right, gp2_prev_dpad_right)) {
+        }
+
+        if (CommonLogic.oneShot(gamepad2.dpad_left, gp2_prev_dpad_left)) {
+        }
+
+        if (gamepad2.right_trigger > 0.8){
+
+        }
+
+        if ((gamepad2.right_trigger <= 0.79) && (gamepad2.right_trigger > 0.10)){
+        }
+
+        if (gamepad2.left_trigger > 0.7) { //0.8
+
+             //experiment
+        }
+
+        // Update the previous status for gamepad1
+        gp1_prev_a = gamepad1.a;
+        gp1_prev_b = gamepad1.b;
+        gp1_prev_x = gamepad1.x;
+        gp1_prev_y = gamepad1.y;
+        gp1_prev_left_bumper = gamepad1.left_bumper;
+        gp1_prev_right_bumper = gamepad1.right_bumper;
+        gp1_prev_dpad_down = gamepad1.dpad_down;
+        gp1_prev_dpad_left = gamepad1.dpad_left;
+        gp1_prev_dpad_up = gamepad1.dpad_up;
+        gp1_prev_dpad_right = gamepad1.dpad_right;
+        gp1_prev_back = gamepad1.back;
+        gp1_prev_start = gamepad1.start;
+
+        // Update the previous status for gamepad 2
+        gp2_prev_a = gamepad2.a;
+        gp2_prev_b = gamepad2.b;
+        gp2_prev_x = gamepad2.x;
+        gp2_prev_y = gamepad2.y;
+        gp2_prev_left_bumper = gamepad2.left_bumper;
+        gp2_prev_right_bumper = gamepad2.right_bumper;
+        gp2_prev_dpad_down = gamepad2.dpad_down;
+        gp2_prev_dpad_left = gamepad2.dpad_left;
+        gp2_prev_dpad_up = gamepad2.dpad_up;
+        gp2_prev_dpad_right = gamepad2.dpad_right;
+        gp2_prev_back = gamepad2.back;
+        gp2_prev_start = gamepad2.start;
     }
 
     //*********************************************************************************************
-    /*
-     * Code to run ONCE after the driver hits STOP
-     */
+
+    //Code to run ONCE after the driver hits STOP
+
     @Override
     public void stop() {
+        robot.stop();
     }
 
-    //*********************************************************************************************
-    public int gyroNormalize(int heading) {
-        // takes the full turns out of heading
-        // gives us values from 0 to 180 for the right side of the robot
-        // and values from 0 to -179 degrees for the left side of the robot
+    private int getTurnDirection(){
+        boolean a = gamepad1.a;
+        boolean b = gamepad1.b;
+        boolean x = gamepad1.x;
+        boolean y = gamepad1.y;
+        boolean RDP = gamepad1.dpad_right;
+        boolean LDP = gamepad1.dpad_left;
 
-        int degrees = heading % 360;
+        if(a){
+            bAutoTurn = true;
 
-        if (degrees > 180) {
-            degrees = degrees - 360;
+            return 59;
+
         }
-
-        if (degrees < -179) {
-            degrees = degrees + 360;
-        }
-
-        return (degrees);
-    }
-
-    //*********************************************************************************************
-    public boolean gyroInTol(int currHeading, int desiredHeading, int tol) {
-
-        int upperTol = gyroNormalize(desiredHeading + tol);
-        int lowerTol = gyroNormalize(desiredHeading - tol);
-        int normalCurr = gyroNormalize(currHeading);
-
-        float signumUpperTol = Math.signum(upperTol);
-        float signumLowerTol = Math.signum(lowerTol);
-
-        boolean retValue = false;
-        // works for all positive numbers direction values
-        if (signumUpperTol > 0 && signumLowerTol > 0) {
-            if ((normalCurr >= lowerTol) && (normalCurr <= upperTol)) {
-                retValue = true;
+        else if (b){
+            bAutoTurn = true;
+            if (y){
+                return -135;
+            }else {
+                return -45;
             }
         }
-
-        // works for negative values
-        else if (signumUpperTol < 0 && signumLowerTol < 0) {
-            if ((normalCurr >= lowerTol) && (normalCurr <= upperTol)) {
-                retValue = true;
+        else if (y){
+            bAutoTurn = true;
+            if(x){
+                return 135;
+            }else{
+                return -59;
             }
         }
-        // mixed values -tol to + tol  This happens at 180 degrees
-        else if ((signumUpperTol < 0) && (signumLowerTol > 0)) {
-            // System.out.println("upperTol " + upperTol + " Current " +
-            // normalCurr + " lowerTol " + lowerTol);
-            if ((Math.abs(normalCurr) >= Math.abs(lowerTol)) &&
-                    (Math.abs(normalCurr) >= Math.abs(upperTol))) {
-                retValue = true;
-            }
-
-        }
-        // mixed values -tol to + tol  This happens at 0 degrees
-        else if ((signumUpperTol > 0) && (signumLowerTol < 0)) {
-            // System.out.println("upperTol " + upperTol + " Current " +
-            // normalCurr + " lowerTol " + lowerTol);
-            if ((Math.abs(normalCurr) <= Math.abs(lowerTol)) &&
-                    (Math.abs(normalCurr) <= Math.abs(upperTol))) {
-                retValue = true;
-            }
-
-        }
-        return (retValue);
-    }  // end gyroInTol()
-
-    // create command to be called from auton to reset encoders at end of auton
-    //*********************************************************************************************
-    private void updateGyroHeading() {
-        //Read the gyro and return its reading in degrees
-
-        //this should pull heading angle from onboard IMU Gyro
-        //https://ftcforum.usfirst.org/forum/ftc-technology/49904-help-with-rev-expansion-hub-integrated-gyro
-        //hint: composeTelemetry() also captures this information below.
-
-        angles = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-        //return formatAngle(angles.angleUnit, angles.firstAngle);
-        gyroHeading_Current = -1 * (int) (angles.firstAngle);
-    }
-
-    //*********************************************************************************************
-    public int getGyroHeading() {
-        updateGyroHeading();
-        return gyroHeading_Current;
-    }
-    public double getGyroHeadingRadian() {
-        angles = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS);
-        return(-1 * (angles.firstAngle));
-    }
-
-    //*********************************************************************************************
-    public int deltaHeading(int currHeading, int targetHeading) {
-        int returnValue = 0;
-        if (currHeading >= 0 && targetHeading >= 0) {
-            returnValue = targetHeading - currHeading;
-        } else if (currHeading >= 0 && targetHeading <= 0) {
-            returnValue = targetHeading + currHeading;
-        } else if (currHeading <= 0 && targetHeading >= 0) {
-            returnValue = -1 * (targetHeading + currHeading);
-        } else if (currHeading <= 0 && targetHeading <= 0) {
-            returnValue = (targetHeading - currHeading);
+        else if(x){
+            bAutoTurn = true;
+            return 45;
         }
 
-        return returnValue;
+    /*else if(RDP){
+        bAutoTurn = true;
+        return -6;
+    }
+    else if(LDP){
+        bAutoTurn = true;
+        return 6;
+    }*/
+        else {
+            return tHeading;
+        }
     }
 
     //*********************************************************************************************
-    void composeTelemetry() {
+    private void  write2Log() {
 
-        // At the beginning of each telemetry update, grab a bunch of data
-        // from the IMU that we will then display in separate lines.
-        telemetry.addAction(new Runnable() {
-            @Override
-            public void run() {
-                // Acquiring the angles is relatively expensive; we don't want
-                // to do that in each of the three items that need that info, as that's
-                // three times the necessary expense.
-                angles = imu.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+    }
+
+    /*
+    public void LaunchLaser() {         //wait for launcher to spin up to speed.
+        robot.launcher.cmdoutlaser();
+        if (robot.launcher.bAtSpeed) {
+            if(robot.launcherBlocker.AtUnBlocked == true){
+                robot.transitionRoller.cmdSpin();
             }
-        });
-
- /*          telemetry.addLine()
-             .addData("status", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return imu.getSystemStatus().toShortString();
-                    }
-                })
-                .addData("calib", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return imu.getCalibrationStatus().toString();
-                    }
-                });
-*/
-        telemetry.addLine()
-                .addData("heading", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return formatAngle(angles.angleUnit, angles.firstAngle);
-                    }
-                })
-                .addData("roll", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return formatAngle(angles.angleUnit, angles.secondAngle);
-                    }
-                })
-                .addData("pitch", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return formatAngle(angles.angleUnit, angles.thirdAngle);
-                    }
-                });
+            if(robot.launcherBlocker.AtUnBlocked == false) {
+                robot.transitionRoller.cmdStop();
+            }
+        };
     }
 
-    //*********************************************************************************************
-    String formatAngle(AngleUnit angleUnit, double angle) {
-        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
-    }
+     */
 
-    //----------------------------------------------------------------------------------------------
-    // Formatting
-    //----------------------------------------------------------------------------------------------
-    String formatDegrees(double degrees) {
-        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
-    }
-    //*********************************************************************************************
-    public void GyroInt (){
-        imu.initialize(new IMU.Parameters(orientationOnRobot));
-    }
-}
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

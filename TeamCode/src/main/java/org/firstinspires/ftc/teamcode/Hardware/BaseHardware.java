@@ -1,3 +1,5 @@
+package org.firstinspires.ftc.teamcode.Hardware;
+
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -24,7 +26,7 @@ public abstract class BaseHardware {
 
 
     /**
-     * BaseHardware constructor
+     * org.firstinspires.ftc.teamcode.Hardware.BaseHardware constructor
      * <p>
      * The op mode name should be unique. It will be the name displayed on the driver station. If
      * multiple op modes have the same name, only one will be available.
