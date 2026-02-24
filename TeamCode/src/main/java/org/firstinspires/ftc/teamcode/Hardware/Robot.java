@@ -4,13 +4,25 @@ import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import java.util.function.Supplier;
 
 public class Robot extends BaseHardware {
 
+
+
+    //public Telemetry telemetry = null;
+
+    /**
+     * Hardware Mappings
+     */
+   // public HardwareMap hardwareMap = null;
+
    /* private static final Logger log = LoggerFactory.getLogger(Robot.class);
-    public DriveTrain driveTrain = new DriveTrain();
+
     public Intake intake = new Intake();
     public Launcher launcher = new Launcher();
     public Uppies uppies = new Uppies();
@@ -18,6 +30,7 @@ public class Robot extends BaseHardware {
     public LauncherBlocker launcherBlocker = new LauncherBlocker();
     public Limey limey = new Limey();
 */
+   public DriveTrain driveTrain = new DriveTrain();
 
     private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this
@@ -48,11 +61,11 @@ public class Robot extends BaseHardware {
     @Override
     public void init() {
         // Must set Hardware Map and telemetry before calling init
-     /*   driveTrain.hardwareMap = this.hardwareMap;
+       driveTrain.hardwareMap = this.hardwareMap;
         driveTrain.telemetry = this.telemetry;
         driveTrain.init();
 
-
+/*
         //  lighting.hardwareMap = this.hardwareMap;
         //lighting.telemetry = this.telemetry;
         // lighting.init();
@@ -85,13 +98,15 @@ public class Robot extends BaseHardware {
         uppies.hardwareMap = this.hardwareMap;
         uppies.telemetry = this.telemetry;
         uppies.init();
-*/
+
+ */
+
     }
 
     @Override
     public void init_loop() {
-     /*   driveTrain.init_loop();
-        //lighting.init_loop();
+       driveTrain.init_loop();
+       /* //lighting.init_loop();
         // sensors.init_loop();
         intake.init_loop();
         launcher.init_loop();
@@ -103,8 +118,8 @@ public class Robot extends BaseHardware {
 
     @Override
     public void start() {
-    /*    driveTrain.start();
-        // lighting.start();
+       driveTrain.start();
+      /*  // lighting.start();
         // sensors.start();
         intake.start();
         launcher.start();
@@ -119,8 +134,8 @@ public class Robot extends BaseHardware {
 
     @Override
     public void loop() {
-    /*    driveTrain.loop();
-        //. lighting.loop();
+      driveTrain.loop();
+      /*  //. lighting.loop();
         // sensors.loop();
         intake.loop();
         launcher.loop();
@@ -138,8 +153,8 @@ public class Robot extends BaseHardware {
     }
 
     public void autonLoop() {
-     /*   //driveTrain.loop();
-        //. lighting.loop();
+        driveTrain.loop();
+      /*  //. lighting.loop();
         // sensors.loop();
         intake.loop();
         launcher.loop();
@@ -154,8 +169,8 @@ public class Robot extends BaseHardware {
 
     @Override
     public void stop() {
-     /*   driveTrain.stop();
-        // lighting.stop();
+        driveTrain.stop();
+      /*  // lighting.stop();
         // sensors.stop();
         intake.stop();
         launcher.stop();
