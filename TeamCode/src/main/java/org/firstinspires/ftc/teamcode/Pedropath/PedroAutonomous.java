@@ -7,7 +7,7 @@ package org.firstinspires.ftc.teamcode.Pedropath;
     import com.bylazar.configurables.annotations.Configurable;
     import com.bylazar.telemetry.TelemetryManager;
     import com.bylazar.telemetry.PanelsTelemetry;
-    import org.firstinspires.ftc.teamcode.CompBotConstants;
+    import org.firstinspires.ftc.teamcode.PedroPathing.CompBotConstants;
 
     import com.pedropathing.geometry.BezierLine;
     import com.pedropathing.follower.Follower;
@@ -26,7 +26,7 @@ package org.firstinspires.ftc.teamcode.Pedropath;
         public void init() {
             panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
-            follower = CompBotConstants.createFollower(hardwareMap);
+            follower = org.firstinspires.ftc.teamcode.PedroPathing.CompBotConstants.createFollower(hardwareMap);
             follower.setStartingPose(new Pose(72, 8, Math.toRadians(90)));
 
             paths = new Paths(follower); // Build paths
